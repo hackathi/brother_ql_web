@@ -353,7 +353,7 @@ def main():
     else:
         LOGLEVEL = CONFIG['SERVER']['LOGLEVEL']
 
-    if LOGLEVEL == 'DEBUG':
+    if LOGLEVEL == 10: # "DEBUG"
         DEBUG = True
     else:
         DEBUG = False
