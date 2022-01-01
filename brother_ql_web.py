@@ -88,7 +88,7 @@ def get_label_context(request):
         "margin_right": float(d.get("margin_right", 35)) / 100.0,
         "grocycode": d.get("grocycode", None),
         "product": d.get("product", None),
-        "duedate": d.get("duedate", None),
+        "duedate": d.get("duedate", d.get("due_date", None)),
     }
     context["margin_top"] = int(context["font_size"] * context["margin_top"])
     context["margin_bottom"] = int(context["font_size"] * context["margin_bottom"])
@@ -210,19 +210,21 @@ def create_label_grocy(text, **kwargs):
 
     title_text = "\n".join(lines)
     grocycode_text = grocycode
-    best_by_text = duedate
+    best_by_text = "Best By: \n" + ("unknown" if duedate is None else duedate)
 
     title_textsize = draw.multiline_textsize(title_text, font=product_font)
-    grocycode_textsize = draw.textsize(
-        grocycode_text, font=code_font
-    )
-    best_by_textsize = draw.textsize(
-        best_by_text, font=best_by_font
-    )
+    grocycode_textsize = draw.textsize(grocycode_text, font=code_font)
+    best_by_textsize = draw.multiline_textsize(best_by_text, font=best_by_font)
 
     # Increase the size of the image to accomodate the text
-    height = kwargs['margin_top'] + title_textsize[1] + grocycode_textsize[1] + encoded.height + kwargs['margin_bottom']
-    newim = Image.new('RGB', (width, height), 'white')
+    height = (
+        kwargs["margin_top"]
+        + title_textsize[1]
+        + grocycode_textsize[1]
+        + encoded.height
+        + kwargs["margin_bottom"]
+    )
+    newim = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(newim)
     newim.paste(im)
     im = newim
@@ -241,11 +243,16 @@ def create_label_grocy(text, **kwargs):
             vertical_offset + encoded.height,
         ),
     )
-    draw.multiline_text((horizontal_offset + encoded.width, vertical_offset), f"Best By:\n{duedate}", kwargs['fill_color'], font=best_by_font)
+    draw.multiline_text(
+        (horizontal_offset + encoded.width, vertical_offset),
+        best_by_text,
+        kwargs["fill_color"],
+        font=best_by_font,
+    )
     vertical_offset = vertical_offset + encoded.height
     textoffset = horizontal_offset, vertical_offset
 
-    draw.text(textoffset, f"{grocycode}", kwargs['fill_color'], font=code_font)
+    draw.text(textoffset, f"{grocycode}", kwargs["fill_color"], font=code_font)
 
     return im
 
@@ -318,8 +325,8 @@ def print_grocy():
     )
 
     # Uncomment to render the image directly in the browser
-    #response.set_header("Content-type", "image/png")
-    #return image_to_png_bytes(im)
+    # response.set_header("Content-type", "image/png")
+    # return image_to_png_bytes(im)
 
     if not DEBUG:
         try:
