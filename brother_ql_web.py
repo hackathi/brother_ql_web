@@ -317,8 +317,9 @@ def print_grocy():
         rotate=rotate,
     )
 
-    response.set_header("Content-type", "image/png")
-    return image_to_png_bytes(im)
+    # Uncomment to render the image directly in the browser
+    #response.set_header("Content-type", "image/png")
+    #return image_to_png_bytes(im)
 
     if not DEBUG:
         try:
