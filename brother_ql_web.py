@@ -157,7 +157,10 @@ def create_label_grocy_1d(text, **kwargs):
         product_font_size = 80
         duedate_font_size = 40
         barcode_height = 120
-
+        
+        from barcode.codex import Code128
+        from barcode.writer import ImageWriter
+        
         barcode = Code128(grocycode, writer=ImageWriter())
         barcode.save(
             '/tmp/dmtx', {"module_height": 5.0, "quiet_zone": 0.5, "write_text": False})   
@@ -313,8 +316,11 @@ def print_grocy():
     if context['product'] is None:
         return_dict['error'] = 'Please provide the product for the label'
         return return_dict
-
+	
+    import os
     code_1d = False
+    if os.environ.get('Code128') and os.environ.get('Code128') == "1":
+    	code_1d = True
     
     im = None
     if code_1d:
