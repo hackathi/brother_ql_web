@@ -148,6 +148,74 @@ def create_label_im(text, **kwargs):
     draw.multiline_text(offset, text, kwargs['fill_color'], font=im_font, align=kwargs['align'])
     return im
 
+def create_label_grocy_1d(text, **kwargs):
+    try:
+        product = kwargs['product']
+        duedate = kwargs['duedate']
+        grocycode = kwargs['grocycode']
+
+        product_font_size = 80
+        duedate_font_size = 40
+        barcode_height = 120
+
+        barcode = Code128(grocycode, writer=ImageWriter())
+        barcode.save(
+            '/tmp/dmtx', {"module_height": 5.0, "quiet_zone": 0.5, "write_text": False})   
+
+        product_font = ImageFont.truetype(kwargs['font_path'], product_font_size)
+        duedate_font = ImageFont.truetype(kwargs['font_path'], duedate_font_size)
+        width = kwargs['width']
+        
+        if kwargs['orientation'] == "standard":
+            margin_left = kwargs['margin_left']
+            margin_right = kwargs['margin_right']
+            margin_top = kwargs['margin_top']
+            margin_bottom = kwargs['margin_bottom']
+            width = kwargs['width']
+        else:
+            margin_left = kwargs['margin_bottom']
+            margin_right = kwargs['margin_top']
+            margin_top = kwargs['margin_left']
+            margin_bottom = kwargs['margin_right']
+            width = 700
+        	
+		        
+        height = margin_top + margin_bottom + barcode_height + int(product_font_size * 1.3) - 30
+        if duedate:
+            height += int(duedate_font_size * 1.3)
+        
+        im = Image.new('RGB', (width, height), 'white')
+        draw = ImageDraw.Draw(im)
+
+        barcode = Image.open('/tmp/dmtx.png').resize((width-margin_left-margin_right,barcode_height))
+
+        vertical_offset = margin_top
+        horizontal_offset = margin_left
+
+        textoffset = horizontal_offset, vertical_offset
+        draw.text(textoffset, product, kwargs['fill_color'], font=product_font)
+
+        vertical_offset += product_font_size
+
+        im.paste(barcode, (horizontal_offset, vertical_offset, width - margin_right, vertical_offset + barcode_height))
+   
+        if duedate is not None:
+            vertical_offset += barcode_height
+            horizontal_offset = margin_left
+            textoffset = horizontal_offset, vertical_offset
+            draw.text(textoffset, duedate,
+                      kwargs['fill_color'], font=duedate_font)     
+                      
+        if kwargs['orientation'] == "rotated":
+            im = im.transpose(Image.ROTATE_90)
+
+        return im
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        logger.error('Exception happened: %s, Line: %s',
+                     exc_type, exc_tb.tb_lineno)
+        return
+
 def create_label_grocy(text, **kwargs):
     product = kwargs['product']
     duedate = kwargs['duedate']
@@ -246,7 +314,13 @@ def print_grocy():
         return_dict['error'] = 'Please provide the product for the label'
         return return_dict
 
-    im = create_label_grocy(**context)
+    code_1d = False
+    
+    im = None
+    if code_1d:
+        im = create_label_grocy_1d(**context)
+    else:
+        im = create_label_grocy(**context)
     if DEBUG: im.save('sample-out.png')
 
     if context['kind'] == ENDLESS_LABEL:
