@@ -88,6 +88,8 @@ def get_label_context(request):
         "grocycode": d.get("grocycode", None),
         "product": d.get("product", None),
         "duedate": d.get("duedate", None),
+        "battery": d.get("battery", None),
+        "chore": d.get("chore", None),
     }
     context["margin_top"] = int(context["font_size"] * context["margin_top"])
     context["margin_bottom"] = int(context["font_size"] * context["margin_bottom"])
@@ -173,10 +175,20 @@ def create_label_im(text, **kwargs):
 def create_label_grocy_1d(text, **kwargs):
     try:
         product = kwargs["product"]
+        chore = kwargs["chore"]
+        battery = kwargs["battery"]
         duedate = kwargs["duedate"]
         grocycode = kwargs["grocycode"]
 
-        product_font_size = 80
+        text = None
+        if product:
+            text = product
+        elif chore:
+            text = chore
+        else:
+            text = battery
+
+        text_font_size = 80
         duedate_font_size = 40
         barcode_height = 120
 
@@ -188,7 +200,7 @@ def create_label_grocy_1d(text, **kwargs):
             "/tmp/dmtx", {"module_height": 5.0, "quiet_zone": 0.5, "write_text": False}
         )
 
-        product_font = ImageFont.truetype(kwargs["font_path"], product_font_size)
+        text_font = ImageFont.truetype(kwargs["font_path"], text_font_size)
         duedate_font = ImageFont.truetype(kwargs["font_path"], duedate_font_size)
         width = kwargs["width"]
 
@@ -206,11 +218,7 @@ def create_label_grocy_1d(text, **kwargs):
             width = 700
 
         height = (
-            margin_top
-            + margin_bottom
-            + barcode_height
-            + int(product_font_size * 1.3)
-            - 30
+            margin_top + margin_bottom + barcode_height + int(text_font_size * 1.3) - 30
         )
         if duedate:
             height += int(duedate_font_size * 1.3)
@@ -226,9 +234,9 @@ def create_label_grocy_1d(text, **kwargs):
         horizontal_offset = margin_left
 
         textoffset = horizontal_offset, vertical_offset
-        draw.text(textoffset, product, kwargs["fill_color"], font=product_font)
+        draw.text(textoffset, text, kwargs["fill_color"], font=text_font)
 
-        vertical_offset += product_font_size
+        vertical_offset += text_font_size
 
         im.paste(
             barcode,
@@ -258,8 +266,18 @@ def create_label_grocy_1d(text, **kwargs):
 
 def create_label_grocy(text, **kwargs):
     product = kwargs["product"]
+    chore = kwargs["chore"]
+    battery = kwargs["battery"]
     duedate = kwargs["duedate"]
     grocycode = kwargs["grocycode"]
+
+    text = None
+    if product:
+        text = product
+    elif chore:
+        text = chore
+    else:
+        text = battery
 
     # prepare grocycode datamatrix
     from pylibdmtx.pylibdmtx import encode
@@ -270,7 +288,7 @@ def create_label_grocy(text, **kwargs):
     datamatrix = Image.frombytes("RGB", (encoded.width, encoded.height), encoded.pixels)
     datamatrix.save("/tmp/dmtx.png")
 
-    product_font = ImageFont.truetype(kwargs["font_path"], 100)
+    text_font = ImageFont.truetype(kwargs["font_path"], 100)
     duedate_font = ImageFont.truetype(kwargs["font_path"], 60)
     width = kwargs["width"]
     height = 200
@@ -308,7 +326,7 @@ def create_label_grocy(text, **kwargs):
 
     textoffset = horizontal_offset, vertical_offset
 
-    draw.text(textoffset, product, kwargs["fill_color"], font=product_font)
+    draw.text(textoffset, text, kwargs["fill_color"], font=text_font)
 
     if duedate is not None:
         if kwargs["orientation"] == "standard":
@@ -364,8 +382,8 @@ def print_grocy():
         return_dict["error"] = e.msg
         return return_dict
 
-    if context["product"] is None:
-        return_dict["error"] = "Please provide the product for the label"
+    if context["product"] is None and context["battery"] and context["chore"]:
+        return_dict["error"] = "Please provide the product/battery/chore for the label"
         return return_dict
 
     import os
@@ -595,7 +613,6 @@ def main():
                 **CONFIG["LABEL"]["DEFAULT_FONTS"]
             )
         )
-
     run(host=CONFIG["SERVER"]["HOST"], port=PORT, debug=DEBUG)
 
 
