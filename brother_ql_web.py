@@ -72,7 +72,7 @@ def get_label_context(request):
       'margin_right':  float(d.get('margin_right',  35))/100.,
       'grocycode': d.get('grocycode', None),
       'product': d.get('product', None),
-      'duedate': d.get('duedate', None)
+      'duedate': d.get('due_date', None)
     }
     context['margin_top']    = int(context['font_size']*context['margin_top'])
     context['margin_bottom'] = int(context['font_size']*context['margin_bottom'])
